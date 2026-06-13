@@ -1,0 +1,129 @@
+/* ─────────────────────────────────────────────────────────────
+   Tomo — estilos globales y temas de lectura cómoda.
+   Los temas se seleccionan con <html data-theme="...">.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --radius: 12px;
+  --transition: 160ms ease;
+  color-scheme: dark;
+}
+
+/* Tema oscuro (por defecto) */
+html[data-theme='dark'] {
+  --bg: #1a1730;
+  --bg-elevated: #241f3d;
+  --bg-reader: #14121f;
+  --surface: #2b2545;
+  --text: #ece8f5;
+  --text-muted: #a39fb8;
+  --border: #3a3358;
+  --accent: #f5a623;
+  color-scheme: dark;
+}
+
+/* OLED puro: negro real para ahorrar batería y máximo contraste suave */
+html[data-theme='oled'] {
+  --bg: #000000;
+  --bg-elevated: #0c0c0c;
+  --bg-reader: #000000;
+  --surface: #141414;
+  --text: #e6e6e6;
+  --text-muted: #8a8a8a;
+  --border: #242424;
+  --accent: #f5a623;
+  color-scheme: dark;
+}
+
+/* Sepia: tonos cálidos, el más cómodo para sesiones largas */
+html[data-theme='sepia'] {
+  --bg: #2a2620;
+  --bg-elevated: #332e26;
+  --bg-reader: #211d18;
+  --surface: #3b352b;
+  --text: #f0e6d2;
+  --text-muted: #b8ac93;
+  --border: #4a4336;
+  --accent: #e8743b;
+  color-scheme: dark;
+}
+
+/* Claro: para entornos muy iluminados */
+html[data-theme='light'] {
+  --bg: #f4f1ea;
+  --bg-elevated: #ffffff;
+  --bg-reader: #e8e3d8;
+  --surface: #ffffff;
+  --text: #2b2545;
+  --text-muted: #6b6580;
+  --border: #ddd6c8;
+  --accent: #e8743b;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+img {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  transition: background var(--transition);
+}
+
+.btn:hover {
+  background: var(--bg-elevated);
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1730;
+  font-weight: 600;
+}
+
+.btn--primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}

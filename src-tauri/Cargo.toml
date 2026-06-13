@@ -1,0 +1,40 @@
+[package]
+name = "tomo"
+version = "0.1.0"
+description = "Lector de cómics y mangas (CBR/CBZ) cómodo para la vista."
+authors = ["Gabriel Castillo <vulcano.start.ia@gmail.com>"]
+edition = "2021"
+rust-version = "1.77"
+license = "MIT"
+
+[lib]
+# El nombre _lib evita colisión con el binario en Windows.
+name = "tomo_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+unrar = "0.5"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "bmp", "webp"] }
+base64 = "0.22"
+thiserror = "2"
+
+[features]
+# Esta característica la usa `tauri dev` para el hot-reload.
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
