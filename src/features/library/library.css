@@ -80,11 +80,16 @@
 }
 
 .pocket__delete {
+  display: inline-flex;
+  align-items: center;
   opacity: 0;
   padding: 4px 8px;
-  font-size: 18px;
   color: var(--text-muted);
   transition: opacity var(--transition);
+}
+
+.pocket__delete:hover {
+  color: var(--accent);
 }
 
 .pocket-row:hover .pocket__delete {
@@ -259,6 +264,9 @@
 }
 
 .card__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--text-muted);
   font-size: 12px;
 }

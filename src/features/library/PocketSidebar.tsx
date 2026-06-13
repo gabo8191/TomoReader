@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '@/components/Icon';
 import type { Pocket } from '@/types';
 
 interface PocketSidebarProps {
@@ -44,8 +45,8 @@ export function PocketSidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <img src="/src-tauri/icons/logo.svg" alt="" width={28} height={28} />
-        <span>Tomo</span>
+        <img src="/logo.svg" alt="" width={28} height={28} />
+        <span>TomoReader</span>
       </div>
 
       <nav className="sidebar__nav">
@@ -91,7 +92,7 @@ export function PocketSidebar({
               title="Eliminar pocket"
               onClick={() => onDelete(pocket.id)}
             >
-              ×
+              <Icon name="trash" size={16} />
             </button>
           </div>
         ))}
@@ -132,7 +133,8 @@ export function PocketSidebar({
         </div>
       ) : (
         <button className="btn btn--ghost sidebar__add" onClick={() => setCreating(true)}>
-          + Nuevo pocket
+          <Icon name="folder" size={18} />
+          Nuevo pocket
         </button>
       )}
     </aside>

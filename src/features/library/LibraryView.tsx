@@ -3,6 +3,7 @@ import { useLibrary } from './useLibrary';
 import { PocketSidebar } from './PocketSidebar';
 import { ComicGrid } from './ComicGrid';
 import { SettingsPanel } from '@/features/settings/SettingsPanel';
+import { Icon } from '@/components/Icon';
 import './library.css';
 
 interface LibraryViewProps {
@@ -34,10 +35,12 @@ export function LibraryView({ onOpenComic }: LibraryViewProps): JSX.Element {
           <h1 className="library__title">{activePocketName}</h1>
           <div className="library__actions">
             <button className="btn btn--ghost" onClick={() => setShowSettings(true)}>
+              <Icon name="settings" size={18} />
               Ajustes
             </button>
             <button className="btn btn--primary" onClick={() => void lib.importComics()}>
-              + Importar cómics
+              <Icon name="plus" size={18} />
+              Importar cómics
             </button>
           </div>
         </header>

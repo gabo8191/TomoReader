@@ -1,3 +1,4 @@
+import { Icon } from '@/components/Icon';
 import type { Comic, Pocket } from '@/types';
 
 interface ComicGridProps {
@@ -57,6 +58,7 @@ export function ComicGrid({
                   title="Quitar de la biblioteca"
                   onClick={() => onDelete(comic.id)}
                 >
+                  <Icon name="trash" size={14} />
                   Quitar
                 </button>
               </div>

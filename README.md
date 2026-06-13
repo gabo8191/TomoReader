@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="src-tauri/icons/logo.svg" width="96" height="96" alt="Tomo" />
-  <h1>Tomo</h1>
+  <img src="src-tauri/icons/logo.svg" width="96" height="96" alt="TomoReader" />
+  <h1>TomoReader</h1>
   <p>Lector de cómics y mangas <strong>CBR/CBZ</strong> de escritorio, cómodo para la vista.</p>
 </div>
 

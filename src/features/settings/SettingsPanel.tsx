@@ -1,4 +1,5 @@
 import { useSettings } from '@/lib/settings-store';
+import { Icon } from '@/components/Icon';
 import type { FitMode, ReadingDirection, ReadingTheme } from '@/types';
 import './settings.css';
 
@@ -32,8 +33,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Element {
       <div className="settings" onClick={(e) => e.stopPropagation()}>
         <header className="settings__header">
           <h2>Ajustes de lectura</h2>
-          <button className="btn btn--ghost" onClick={onClose}>
-            ✕
+          <button className="iconbtn" onClick={onClose} title="Cerrar">
+            <Icon name="close" size={18} />
           </button>
         </header>
 
