@@ -17,14 +17,18 @@ pub struct AppState {
     db: Mutex<Connection>,
     sessions: Mutex<HashMap<i64, OpenedComic>>,
     pub cache_dir: PathBuf,
+    /// Carpeta propia donde Tomo guarda una copia de cada cómic importado, para
+    /// no depender de la ubicación original (que puede borrarse o ser temporal).
+    pub library_dir: PathBuf,
 }
 
 impl AppState {
-    pub fn new(db: Connection, cache_dir: PathBuf) -> Self {
+    pub fn new(db: Connection, cache_dir: PathBuf, library_dir: PathBuf) -> Self {
         Self {
             db: Mutex::new(db),
             sessions: Mutex::new(HashMap::new()),
             cache_dir,
+            library_dir,
         }
     }
 

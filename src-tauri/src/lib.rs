@@ -24,7 +24,11 @@ pub fn run() {
             let cache_dir = app.path().app_cache_dir()?.join("pages");
             std::fs::create_dir_all(&cache_dir)?;
 
-            app.manage(AppState::new(conn, cache_dir));
+            // Carpeta propia donde se copian los cómics importados.
+            let library_dir = data_dir.join("library");
+            std::fs::create_dir_all(&library_dir)?;
+
+            app.manage(AppState::new(conn, cache_dir, library_dir));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -16,7 +16,17 @@ use crate::util;
 pub fn open_comic(state: State<'_, AppState>, id: i64) -> Result<ComicSession> {
     let comic = state.with_db(|conn| repo::get_comic(conn, id))?;
 
-    let opened = OpenedComic::open(Path::new(&comic.path), &state.cache_dir, id)?;
+    // Mensaje claro si el archivo ya no está (p. ej. importado por referencia
+    // desde una ruta temporal que luego desapareció).
+    let path = Path::new(&comic.path);
+    if !path.exists() {
+        return Err(AppError::NotFound(format!(
+            "el archivo de «{}» ya no existe. Vuelve a importarlo.",
+            comic.title
+        )));
+    }
+
+    let opened = OpenedComic::open(path, &state.cache_dir, id)?;
     let page_count = opened.page_count() as i64;
 
     state.with_sessions(|sessions| {
