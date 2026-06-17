@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Comic, ComicSession, PageImage, Pocket } from '@/types';
+import type { Comic, ComicSession, ImportResult, PageImage, Pocket } from '@/types';
 
 /**
  * Capa de acceso a los comandos del backend Rust.
@@ -25,7 +25,7 @@ export const api = {
   listComics(pocketId: number | null): Promise<Comic[]> {
     return invoke('list_comics', { pocketId });
   },
-  importComics(paths: string[], pocketId: number | null): Promise<Comic[]> {
+  importComics(paths: string[], pocketId: number | null): Promise<ImportResult> {
     return invoke('import_comics', { paths, pocketId });
   },
   deleteComic(id: number): Promise<void> {
@@ -38,6 +38,9 @@ export const api = {
   // ── Lectura ────────────────────────────────────────────────
   openComic(id: number): Promise<ComicSession> {
     return invoke('open_comic', { id });
+  },
+  closeComic(id: number): Promise<void> {
+    return invoke('close_comic', { comicId: id });
   },
   getPage(comicId: number, index: number): Promise<PageImage> {
     return invoke('get_page', { comicId, index });

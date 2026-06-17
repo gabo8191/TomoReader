@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use serde::Serialize;
 use tauri::State;
 
 use crate::archive;
@@ -12,28 +13,49 @@ use crate::util;
 /// Ancho máximo de las miniaturas de portada (px).
 const COVER_WIDTH: u32 = 400;
 
+/// Archivo que no se pudo importar, con el motivo legible para mostrar al usuario.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportFailure {
+    pub path: String,
+    pub reason: String,
+}
+
+/// Resultado de un lote de importación: lo que se logró importar y lo que falló.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub imported: Vec<Comic>,
+    pub failed: Vec<ImportFailure>,
+}
+
 #[tauri::command]
 pub fn list_comics(state: State<'_, AppState>, pocket_id: Option<i64>) -> Result<Vec<Comic>> {
     state.with_db(|conn| repo::list_comics(conn, pocket_id))
 }
 
-/// Importa varios archivos a la biblioteca. Los archivos que fallen se omiten
-/// (importación resiliente) para no abortar todo el lote por uno corrupto.
+/// Importa varios archivos a la biblioteca. Los archivos que fallen no abortan el
+/// lote (importación resiliente): se reportan en `failed` con su motivo para que la
+/// UI pueda explicar por qué un cómic no apareció.
 #[tauri::command]
 pub fn import_comics(
     state: State<'_, AppState>,
     paths: Vec<String>,
     pocket_id: Option<i64>,
-) -> Result<Vec<Comic>> {
+) -> Result<ImportResult> {
     let library_dir = state.library_dir.clone();
     state.with_db(|conn| {
+        let mut failed = Vec::new();
         for path_str in &paths {
             if let Err(err) = import_one(conn, path_str, &library_dir, pocket_id) {
-                // Registramos y continuamos con el resto del lote.
-                eprintln!("No se pudo importar '{path_str}': {err}");
+                failed.push(ImportFailure {
+                    path: path_str.clone(),
+                    reason: err.to_string(),
+                });
             }
         }
-        repo::list_comics(conn, pocket_id)
+        let imported = repo::list_comics(conn, pocket_id)?;
+        Ok(ImportResult { imported, failed })
     })
 }
 

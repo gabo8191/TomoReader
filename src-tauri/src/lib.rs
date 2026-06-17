@@ -41,6 +41,7 @@ pub fn run() {
             commands::move_comic,
             commands::delete_comic,
             commands::open_comic,
+            commands::close_comic,
             commands::get_page,
             commands::update_progress,
         ])

@@ -27,6 +27,18 @@ export interface Comic {
   addedAt: string;
 }
 
+/** Archivo que no se pudo importar, con el motivo para mostrar al usuario. */
+export interface ImportFailure {
+  path: string;
+  reason: string;
+}
+
+/** Resultado de un lote de importación: lo importado y lo que falló. */
+export interface ImportResult {
+  imported: Comic[];
+  failed: ImportFailure[];
+}
+
 /** Resultado de abrir un cómic: sesión lista para leer. */
 export interface ComicSession {
   comicId: number;

@@ -71,6 +71,8 @@ export function useReader(comicId: number) {
     })();
     return () => {
       active = false;
+      // Libera la sesión y las páginas temporales (CBR) al salir del lector.
+      void api.closeComic(comicId);
     };
   }, [comicId]);
 

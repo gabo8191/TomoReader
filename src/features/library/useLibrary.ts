@@ -3,6 +3,9 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '@/lib/api';
 import type { Comic, Pocket } from '@/types';
 
+/** Extrae el nombre de archivo de una ruta absoluta (Windows o Unix). */
+const fileName = (path: string): string => path.split(/[/\\]/).pop() ?? path;
+
 interface LibraryState {
   pockets: Pocket[];
   comics: Comic[];
@@ -64,8 +67,13 @@ export function useLibrary() {
     if (!selection) return;
     const paths = Array.isArray(selection) ? selection : [selection];
     try {
-      await api.importComics(paths, state.selectedPocket);
+      const result = await api.importComics(paths, state.selectedPocket);
       await Promise.all([refreshPockets(), loadComics(state.selectedPocket)]);
+      // Reporta los archivos que no se pudieron importar, con su motivo.
+      if (result.failed.length > 0) {
+        const detail = result.failed.map((f) => `${fileName(f.path)}: ${f.reason}`).join('\n');
+        setError(`No se pudieron importar ${result.failed.length} archivo(s):\n${detail}`);
+      }
     } catch (err) {
       setError(err);
     }
