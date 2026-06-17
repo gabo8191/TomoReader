@@ -5,7 +5,7 @@ interface ComicGridProps {
   comics: Comic[];
   pockets: Pocket[];
   loading: boolean;
-  onOpen: (comicId: number) => void;
+  onOpen: (comic: Comic) => void;
   onMove: (comicId: number, pocketId: number | null) => void;
   onDelete: (comicId: number) => void;
 }
@@ -25,8 +25,8 @@ export function ComicGrid({
   if (comics.length === 0) {
     return (
       <div className="grid__state">
-        <p>No hay cómics aquí todavía.</p>
-        <p className="grid__hint">Usa «Importar cómics» para añadir archivos CBR o CBZ.</p>
+        <p>No hay libros aquí todavía.</p>
+        <p className="grid__hint">Usa «Importar» para añadir archivos CBR, CBZ, PDF o EPUB.</p>
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function ComicGrid({
         const progress = comic.pageCount > 0 ? (comic.lastPage + 1) / comic.pageCount : 0;
         return (
           <article key={comic.id} className="card">
-            <button className="card__cover" onClick={() => onOpen(comic.id)}>
+            <button className="card__cover" onClick={() => onOpen(comic)}>
               {comic.cover ? (
                 <img src={comic.cover} alt={comic.title} loading="lazy" />
               ) : (
@@ -46,13 +46,16 @@ export function ComicGrid({
               {progress > 0 && (
                 <div className="card__progress" style={{ width: `${progress * 100}%` }} />
               )}
+              <span className="card__badge">{comic.format.toUpperCase()}</span>
             </button>
             <div className="card__meta">
               <h3 className="card__title" title={comic.title}>
                 {comic.title}
               </h3>
               <div className="card__sub">
-                <span>{comic.pageCount} págs.</span>
+                <span>
+                  {comic.pageCount > 0 ? `${comic.pageCount} págs.` : comic.format.toUpperCase()}
+                </span>
                 <button
                   className="card__delete"
                   title="Quitar de la biblioteca"

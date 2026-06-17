@@ -44,6 +44,13 @@ pub fn run() {
             commands::close_comic,
             commands::get_page,
             commands::update_progress,
+            commands::read_document,
+            commands::set_comic_language,
+            commands::translate,
+            commands::list_highlights,
+            commands::create_highlight,
+            commands::update_highlight_note,
+            commands::delete_highlight,
         ])
         .run(tauri::generate_context!())
         .expect("error fatal al ejecutar Tomo");

@@ -22,6 +22,9 @@ pub enum AppError {
     #[error("formato no soportado: {0}")]
     UnsupportedFormat(String),
 
+    #[error("error al traducir: {0}")]
+    Translate(String),
+
     #[error("recurso no encontrado: {0}")]
     NotFound(String),
 

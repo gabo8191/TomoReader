@@ -26,6 +26,7 @@ unrar = "0.5"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "bmp", "webp"] }
 base64 = "0.22"
 thiserror = "2"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 
 [features]
 # Esta característica la usa `tauri dev` para el hot-reload.

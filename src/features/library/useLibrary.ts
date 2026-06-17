@@ -1,10 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '@/lib/api';
-import type { Comic, Pocket } from '@/types';
+import type { Comic, ComicFormat, Pocket } from '@/types';
 
 /** Extrae el nombre de archivo de una ruta absoluta (Windows o Unix). */
 const fileName = (path: string): string => path.split(/[/\\]/).pop() ?? path;
+
+/** Criterio de orden de la biblioteca. */
+export type SortBy = 'recent' | 'oldest' | 'title';
+
+/** Filtros aplicados en cliente sobre la lista de cómics ya cargada. */
+export interface LibraryFilters {
+  /** Formatos visibles; vacío = todos. */
+  formats: ComicFormat[];
+  /** Solo libros añadidos a partir de esta fecha (YYYY-MM-DD); '' = sin límite. */
+  since: string;
+  sortBy: SortBy;
+}
+
+const DEFAULT_FILTERS: LibraryFilters = { formats: [], since: '', sortBy: 'recent' };
 
 interface LibraryState {
   pockets: Pocket[];
@@ -28,8 +42,45 @@ export function useLibrary() {
     error: null,
   });
 
+  const [filters, setFilters] = useState<LibraryFilters>(DEFAULT_FILTERS);
+
   const setError = (error: unknown) =>
     setState((s) => ({ ...s, error: error instanceof Error ? error.message : String(error) }));
+
+  // Lista visible: aplica filtros de formato/fecha y orden sobre los cómics cargados.
+  const visibleComics = useMemo(() => {
+    const filtered = state.comics.filter((c) => {
+      if (filters.formats.length > 0 && !filters.formats.includes(c.format)) return false;
+      // addedAt viene como "YYYY-MM-DD HH:MM:SS"; comparar por prefijo de fecha basta.
+      if (filters.since && c.addedAt.slice(0, 10) < filters.since) return false;
+      return true;
+    });
+    const sorted = [...filtered];
+    switch (filters.sortBy) {
+      case 'recent':
+        sorted.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => a.addedAt.localeCompare(b.addedAt));
+        break;
+      case 'title':
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+    }
+    return sorted;
+  }, [state.comics, filters]);
+
+  const toggleFormat = useCallback((format: ComicFormat) => {
+    setFilters((f) => ({
+      ...f,
+      formats: f.formats.includes(format)
+        ? f.formats.filter((x) => x !== format)
+        : [...f.formats, format],
+    }));
+  }, []);
+
+  const setSince = useCallback((since: string) => setFilters((f) => ({ ...f, since })), []);
+  const setSortBy = useCallback((sortBy: SortBy) => setFilters((f) => ({ ...f, sortBy })), []);
 
   const refreshPockets = useCallback(async () => {
     const pockets = await api.listPockets();
@@ -62,7 +113,7 @@ export function useLibrary() {
   const importComics = useCallback(async () => {
     const selection = await open({
       multiple: true,
-      filters: [{ name: 'Cómics', extensions: ['cbr', 'cbz'] }],
+      filters: [{ name: 'Libros', extensions: ['cbr', 'cbz', 'pdf', 'epub'] }],
     });
     if (!selection) return;
     const paths = Array.isArray(selection) ? selection : [selection];
@@ -142,6 +193,11 @@ export function useLibrary() {
 
   return {
     ...state,
+    visibleComics,
+    filters,
+    toggleFormat,
+    setSince,
+    setSortBy,
     loadComics,
     importComics,
     createPocket,

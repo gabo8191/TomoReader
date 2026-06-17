@@ -7,7 +7,7 @@ use rusqlite::{params, Connection, Row};
 
 use crate::error::{AppError, Result};
 
-use super::models::{Comic, Pocket};
+use super::models::{Comic, Highlight, Pocket};
 
 fn cover_to_data_url(cover: Option<Vec<u8>>) -> Option<String> {
     cover.map(|bytes| format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
@@ -24,7 +24,24 @@ fn row_to_comic(row: &Row<'_>) -> rusqlite::Result<Comic> {
         page_count: row.get("page_count")?,
         last_page: row.get("last_page")?,
         cover: cover_to_data_url(cover),
+        language: row.get("language")?,
         added_at: row.get("added_at")?,
+    })
+}
+
+fn row_to_highlight(row: &Row<'_>) -> rusqlite::Result<Highlight> {
+    Ok(Highlight {
+        id: row.get("id")?,
+        comic_id: row.get("comic_id")?,
+        kind: row.get("kind")?,
+        text: row.get("text")?,
+        translation: row.get("translation")?,
+        source_lang: row.get("source_lang")?,
+        target_lang: row.get("target_lang")?,
+        location: row.get("location")?,
+        color: row.get("color")?,
+        note: row.get("note")?,
+        created_at: row.get("created_at")?,
     })
 }
 
@@ -167,5 +184,88 @@ pub fn move_comic(conn: &Connection, id: i64, pocket_id: Option<i64>) -> Result<
 
 pub fn delete_comic(conn: &Connection, id: i64) -> Result<()> {
     conn.execute("DELETE FROM comics WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+pub fn set_comic_language(conn: &Connection, id: i64, language: Option<&str>) -> Result<()> {
+    conn.execute(
+        "UPDATE comics SET language = ?1 WHERE id = ?2",
+        params![language, id],
+    )?;
+    Ok(())
+}
+
+// ── Highlights / vocabulario ─────────────────────────────────────────────────
+
+/// Lista los resaltados. Con `comic_id` filtra por libro; sin él, todos (vocabulario).
+pub fn list_highlights(conn: &Connection, comic_id: Option<i64>) -> Result<Vec<Highlight>> {
+    let mut out = Vec::new();
+    match comic_id {
+        Some(cid) => {
+            let mut stmt = conn
+                .prepare("SELECT * FROM highlights WHERE comic_id = ?1 ORDER BY created_at DESC")?;
+            let rows = stmt.query_map(params![cid], row_to_highlight)?;
+            for h in rows {
+                out.push(h?);
+            }
+        }
+        None => {
+            let mut stmt = conn.prepare("SELECT * FROM highlights ORDER BY created_at DESC")?;
+            let rows = stmt.query_map([], row_to_highlight)?;
+            for h in rows {
+                out.push(h?);
+            }
+        }
+    }
+    Ok(out)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn create_highlight(
+    conn: &Connection,
+    comic_id: i64,
+    kind: &str,
+    text: &str,
+    translation: Option<&str>,
+    source_lang: Option<&str>,
+    target_lang: Option<&str>,
+    location: Option<&str>,
+    color: &str,
+    note: Option<&str>,
+) -> Result<Highlight> {
+    conn.execute(
+        "INSERT INTO highlights
+            (comic_id, kind, text, translation, source_lang, target_lang, location, color, note)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        params![
+            comic_id,
+            kind,
+            text,
+            translation,
+            source_lang,
+            target_lang,
+            location,
+            color,
+            note
+        ],
+    )?;
+    conn.query_row(
+        "SELECT * FROM highlights WHERE id = ?1",
+        params![conn.last_insert_rowid()],
+        row_to_highlight,
+    )
+    .map_err(|_| AppError::NotFound("highlight recién creado".to_string()))
+}
+
+pub fn update_highlight_note(conn: &Connection, id: i64, note: Option<&str>) -> Result<()> {
+    conn.execute(
+        "UPDATE highlights SET note = ?1 WHERE id = ?2",
+        params![note, id],
+    )?;
+    Ok(())
+}
+
+pub fn delete_highlight(conn: &Connection, id: i64) -> Result<()> {
+    conn.execute("DELETE FROM highlights WHERE id = ?1", params![id])?;
     Ok(())
 }

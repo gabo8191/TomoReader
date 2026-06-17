@@ -1,5 +1,6 @@
 import { useSettings } from '@/lib/settings-store';
 import { Icon } from '@/components/Icon';
+import { LANGUAGES } from '@/lib/languages';
 import type { FitMode, ReadingDirection, ReadingTheme } from '@/types';
 import './settings.css';
 
@@ -110,6 +111,21 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): JSX.Element {
             value={s.warmth}
             onChange={(e) => s.setWarmth(Number(e.target.value))}
           />
+        </section>
+
+        <section className="settings__group">
+          <label className="settings__label">Idioma materno (traducciones)</label>
+          <select
+            className="settings__select"
+            value={s.nativeLanguage}
+            onChange={(e) => s.setNativeLanguage(e.target.value)}
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.name}
+              </option>
+            ))}
+          </select>
         </section>
 
         <section className="settings__group settings__group--row">

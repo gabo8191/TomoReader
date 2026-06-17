@@ -40,7 +40,49 @@ fn migrate(conn: &Connection) -> Result<()> {
         );
 
         CREATE INDEX IF NOT EXISTS idx_comics_pocket ON comics(pocket_id);
+
+        CREATE TABLE IF NOT EXISTS highlights (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            comic_id    INTEGER NOT NULL REFERENCES comics(id) ON DELETE CASCADE,
+            kind        TEXT NOT NULL DEFAULT 'phrase',
+            text        TEXT NOT NULL,
+            translation TEXT,
+            source_lang TEXT,
+            target_lang TEXT,
+            location    TEXT,
+            color       TEXT NOT NULL DEFAULT '#F5A623',
+            note        TEXT,
+            created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_highlights_comic ON highlights(comic_id);
         ",
     )?;
+
+    // `language` (idioma del libro) se añade aparte: ADD COLUMN no admite
+    // IF NOT EXISTS, así que comprobamos antes para que la migración sea idempotente.
+    add_column_if_missing(conn, "comics", "language", "TEXT")?;
+
+    Ok(())
+}
+
+/// Añade una columna a una tabla solo si aún no existe (migración idempotente).
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    col_type: &str,
+) -> Result<()> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let exists = stmt
+        .query_map([], |row| row.get::<_, String>("name"))?
+        .filter_map(|r| r.ok())
+        .any(|name| name == column);
+    if !exists {
+        conn.execute(
+            &format!("ALTER TABLE {table} ADD COLUMN {column} {col_type}"),
+            [],
+        )?;
+    }
     Ok(())
 }

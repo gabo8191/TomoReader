@@ -57,6 +57,16 @@
   font-weight: 600;
 }
 
+.settings__select {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-reader);
+  color: var(--text);
+}
+
 .settings__segment {
   display: flex;
   gap: 6px;

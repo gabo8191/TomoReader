@@ -1,5 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Comic, ComicSession, ImportResult, PageImage, Pocket } from '@/types';
+import type {
+  Comic,
+  ComicSession,
+  DocumentData,
+  Highlight,
+  ImportResult,
+  NewHighlight,
+  PageImage,
+  Pocket,
+  Translation,
+} from '@/types';
 
 /**
  * Capa de acceso a los comandos del backend Rust.
@@ -47,5 +57,32 @@ export const api = {
   },
   updateProgress(comicId: number, lastPage: number): Promise<void> {
     return invoke('update_progress', { comicId, lastPage });
+  },
+
+  // ── Documentos (PDF/EPUB) ──────────────────────────────────
+  readDocument(comicId: number): Promise<DocumentData> {
+    return invoke('read_document', { comicId });
+  },
+  setComicLanguage(comicId: number, language: string | null): Promise<void> {
+    return invoke('set_comic_language', { comicId, language });
+  },
+
+  // ── Traducción ─────────────────────────────────────────────
+  translate(text: string, source: string, target: string): Promise<Translation> {
+    return invoke('translate', { text, source, target });
+  },
+
+  // ── Resaltados / vocabulario ───────────────────────────────
+  listHighlights(comicId: number | null): Promise<Highlight[]> {
+    return invoke('list_highlights', { comicId });
+  },
+  createHighlight(highlight: NewHighlight): Promise<Highlight> {
+    return invoke('create_highlight', { highlight });
+  },
+  updateHighlightNote(id: number, note: string | null): Promise<void> {
+    return invoke('update_highlight_note', { id, note });
+  },
+  deleteHighlight(id: number): Promise<void> {
+    return invoke('delete_highlight', { id });
   },
 };

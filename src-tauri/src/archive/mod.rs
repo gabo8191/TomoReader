@@ -29,10 +29,16 @@ pub(crate) fn is_image(name: &str) -> bool {
 }
 
 /// Formato soportado, derivado de la extensión del archivo.
+///
+/// Los formatos de cómic (`Cbz`/`Cbr`) son basados en imágenes y se leen con el
+/// pipeline de páginas. Los de documento (`Pdf`/`Epub`) se renderizan en el
+/// webview (pdf.js/epub.js) y no pasan por ese pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
     Cbz,
     Cbr,
+    Pdf,
+    Epub,
 }
 
 impl Format {
@@ -45,6 +51,8 @@ impl Format {
         {
             Some("cbz") | Some("zip") => Ok(Format::Cbz),
             Some("cbr") | Some("rar") => Ok(Format::Cbr),
+            Some("pdf") => Ok(Format::Pdf),
+            Some("epub") => Ok(Format::Epub),
             other => Err(AppError::UnsupportedFormat(
                 other.unwrap_or("desconocido").to_string(),
             )),
@@ -55,7 +63,15 @@ impl Format {
         match self {
             Format::Cbz => "cbz",
             Format::Cbr => "cbr",
+            Format::Pdf => "pdf",
+            Format::Epub => "epub",
         }
+    }
+
+    /// Indica si el formato es un documento de texto (PDF/EPUB) que se renderiza
+    /// en el webview en vez de con el pipeline de imágenes.
+    pub fn is_document(self) -> bool {
+        matches!(self, Format::Pdf | Format::Epub)
     }
 }
 
@@ -71,6 +87,18 @@ pub struct ComicMetadata {
 pub fn read_metadata(path: &Path) -> Result<ComicMetadata> {
     let format = Format::from_path(path)?;
     match format {
+        // Los documentos (PDF/EPUB) los pagina y renderiza el frontend; aquí solo
+        // validamos que el archivo exista y sea legible.
+        Format::Pdf | Format::Epub => {
+            if !path.is_file() {
+                return Err(AppError::NotFound(format!("{path:?}")));
+            }
+            Ok(ComicMetadata {
+                format,
+                page_count: 0,
+                cover: None,
+            })
+        }
         Format::Cbz => {
             let pages = cbz::list_pages(path)?;
             let cover = pages
@@ -110,6 +138,10 @@ impl OpenedComic {
     /// Abre el cómic. Para CBR, extrae las páginas a `<cache_dir>/comic-<id>`.
     pub fn open(path: &Path, cache_dir: &Path, comic_id: i64) -> Result<Self> {
         match Format::from_path(path)? {
+            // PDF/EPUB no usan el pipeline de imágenes; se sirven con read_document.
+            Format::Pdf | Format::Epub => Err(AppError::UnsupportedFormat(
+                "los documentos PDF/EPUB no se abren como cómic de imágenes".into(),
+            )),
             Format::Cbz => {
                 let entries = cbz::list_pages(path)?;
                 Ok(OpenedComic::Zip {

@@ -19,6 +19,8 @@ interface SettingsState {
   doublePage: boolean;
   /** Mostrar la barra de progreso inferior. */
   showProgress: boolean;
+  /** Idioma materno (código ISO) usado como destino de las traducciones. */
+  nativeLanguage: string;
 
   setTheme: (theme: ReadingTheme) => void;
   setFitMode: (fit: FitMode) => void;
@@ -27,6 +29,7 @@ interface SettingsState {
   setWarmth: (value: number) => void;
   toggleDoublePage: () => void;
   toggleProgress: () => void;
+  setNativeLanguage: (lang: string) => void;
 }
 
 const clamp = (value: number, min: number, max: number): number =>
@@ -42,6 +45,7 @@ export const useSettings = create<SettingsState>()(
       warmth: 0.25,
       doublePage: false,
       showProgress: true,
+      nativeLanguage: 'es',
 
       setTheme: (theme) => set({ theme }),
       setFitMode: (fitMode) => set({ fitMode }),
@@ -50,6 +54,7 @@ export const useSettings = create<SettingsState>()(
       setWarmth: (warmth) => set({ warmth: clamp(warmth, 0, 1) }),
       toggleDoublePage: () => set((s) => ({ doublePage: !s.doublePage })),
       toggleProgress: () => set((s) => ({ showProgress: !s.showProgress })),
+      setNativeLanguage: (nativeLanguage) => set({ nativeLanguage }),
     }),
     { name: 'tomo-settings' },
   ),
