@@ -1,6 +1,6 @@
 [package]
 name = "tomo"
-version = "0.1.2"
+version = "0.2.0"
 description = "Lector de cómics y mangas (CBR/CBZ) cómodo para la vista."
 authors = ["Gabriel Castillo <vulcano.start.ia@gmail.com>"]
 edition = "2021"

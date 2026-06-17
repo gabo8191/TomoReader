@@ -1,6 +1,6 @@
 {
   "name": "tomo",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Tomo — lector de cómics y mangas (CBR/CBZ) cómodo para la vista, construido con Tauri + React.",
   "type": "module",
   "license": "MIT",
