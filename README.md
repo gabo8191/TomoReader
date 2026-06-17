@@ -1,7 +1,7 @@
 <div align="center">
   <img src="src-tauri/icons/logo.svg" width="96" height="96" alt="TomoReader" />
   <h1>TomoReader</h1>
-  <p><strong>Lector de cómics y mangas (CBR/CBZ) de escritorio, cómodo para la vista.</strong></p>
+  <p><strong>Lector de escritorio de cómics/mangas (CBR/CBZ) y libros (PDF/EPUB), cómodo para la vista y con funciones tipo Kindle.</strong></p>
 
   <p>
     <a href="https://github.com/gabo8191/TomoReader/actions/workflows/ci.yml">
@@ -20,16 +20,19 @@
 ---
 
 **TomoReader** es una aplicación de escritorio ligera (Rust + Tauri) para leer cómics y
-mangas en formato **CBR** y **CBZ**. Organiza tu colección en *pockets*, recuerda por
-dónde ibas y ofrece modos de lectura pensados para sesiones largas sin cansar la vista.
+mangas (**CBR**/**CBZ**) y libros (**PDF**/**EPUB**). Organiza tu colección en *pockets*,
+recuerda por dónde ibas y ofrece modos de lectura pensados para sesiones largas sin
+cansar la vista. En PDF y EPUB añade funciones tipo Kindle: **selecciona texto para
+traducirlo**, **resáltalo** y **guárdalo** como vocabulario.
 
 > 🧪 Proyecto open source. ¿Te resulta útil o quieres mejorarlo? Las
 > [contribuciones](#-contribuir) son bienvenidas.
 
 ## ✨ Características
 
-- 📚 **Pockets (carpetas)** para organizar tus cómics y mangas.
-- 📖 Lectura de archivos **CBR** (RAR) y **CBZ** (ZIP).
+- 📚 **Pockets (carpetas)** para organizar tu biblioteca.
+- 📖 Lectura de **CBR** (RAR), **CBZ** (ZIP), **PDF** y **EPUB**.
+- 🗂️ **Filtros** por formato, fecha de adición y orden (recientes / antiguos / título).
 - 🌙 **Temas de lectura cómoda**: Sepia, Oscuro, OLED puro y Claro.
 - 🔆 **Control de brillo** y **filtro de calidez** (reduce la luz azul) para sesiones largas.
 - ↔️ **Dirección de lectura** configurable (LTR para cómic, RTL para manga).
@@ -37,6 +40,13 @@ dónde ibas y ofrece modos de lectura pensados para sesiones largas sin cansar l
 - ⌨️ **Navegación por teclado** (flechas, espacio, Inicio/Fin, Esc) y zonas de clic.
 - 💾 **Progreso de lectura** guardado automáticamente por cómic.
 - ⚡ Caché de páginas en memoria con **prefetch** de la siguiente página.
+
+### 📘 Funciones tipo Kindle (PDF/EPUB)
+
+- 🌐 **Traducción al seleccionar** texto (Google Translate, gratis y sin API key).
+- 🖍️ **Resaltado** de frases que **se guardan** y persisten al reabrir el libro.
+- 🗒️ **Vocabulario**: listado de palabras y frases guardadas, filtrable por libro.
+- 🈯 **Idioma por libro** y **idioma materno** global como destino de la traducción.
 
 ## 🖼️ Capturas
 
@@ -51,13 +61,15 @@ dónde ibas y ofrece modos de lectura pensados para sesiones largas sin cansar l
 
 ## 🧱 Stack
 
-| Capa      | Tecnología                                  |
-| --------- | ------------------------------------------- |
-| Núcleo    | **Rust** + **Tauri 2**                      |
-| UI        | **React 18** + **TypeScript** + **Vite**    |
-| Estado    | **Zustand** (preferencias persistidas)      |
-| Datos     | **SQLite** (`rusqlite`, bundled)            |
-| Archivos  | `zip` (CBZ) + `unrar` (CBR) + `image`       |
+| Capa      | Tecnología                                       |
+| --------- | ------------------------------------------------ |
+| Núcleo    | **Rust** + **Tauri 2**                           |
+| UI        | **React 18** + **TypeScript** + **Vite**         |
+| Estado    | **Zustand** (preferencias persistidas)           |
+| Datos     | **SQLite** (`rusqlite`, bundled)                 |
+| Cómics    | `zip` (CBZ) + `unrar` (CBR) + `image`            |
+| Documentos| `pdfjs-dist` (PDF) + `epubjs` (EPUB)             |
+| Traducción| `reqwest` → Google Translate (endpoint gratuito) |
 
 ## 📋 Requisitos
 
@@ -120,19 +132,24 @@ cada commit.
 ```
 src/                      # Frontend React (por features)
 ├── features/
-│   ├── library/          # Pockets + grid de cómics
-│   ├── reader/           # Lector (hook + vista)
-│   └── settings/         # Panel de preferencias
-├── lib/                  # api (invoke) + store de ajustes
+│   ├── library/          # Pockets + grid + filtros
+│   ├── reader/           # Lector de imágenes (ReaderView) y de documentos (DocReader)
+│   ├── settings/         # Panel de preferencias (incl. idioma materno)
+│   └── vocabulary/       # Listado de frases/palabras guardadas
+├── lib/                  # api (invoke) · store de ajustes · idiomas
 └── types/                # Contrato compartido con Rust
 
 src-tauri/src/            # Backend Rust
-├── archive/              # Lectura CBR/CBZ + ordenación natural
+├── archive/              # CBR/CBZ + Format (incl. pdf/epub) + ordenación natural
 ├── library/              # models · db (migraciones) · repository (SQL)
-├── commands/             # Comandos Tauri expuestos al frontend
+├── commands/             # comics · reader · documents · translate · highlights · pockets
 ├── state.rs · error.rs · util.rs
 └── lib.rs · main.rs
 ```
+
+> **Dos lectores según el formato** (`App.tsx` enruta con `isDocumentFormat`):
+> CBR/CBZ se leen como imágenes desde Rust; PDF/EPUB se renderizan en el webview con
+> pdf.js/epub.js, lo que habilita la selección de texto y las funciones tipo Kindle.
 
 ### Comandos expuestos (IPC)
 
@@ -143,20 +160,30 @@ src-tauri/src/            # Backend Rust
 | `rename_pocket`    | Renombra un pocket                           |
 | `delete_pocket`    | Elimina un pocket (los cómics pasan a Todos) |
 | `list_comics`      | Lista cómics (opcionalmente por pocket)      |
-| `import_comics`    | Importa archivos CBR/CBZ (resiliente)        |
+| `import_comics`    | Importa CBR/CBZ/PDF/EPUB (resiliente)        |
 | `move_comic`       | Mueve un cómic a otro pocket                 |
 | `delete_comic`     | Quita un cómic de la biblioteca              |
-| `open_comic`       | Abre una sesión de lectura                   |
+| `open_comic`       | Abre una sesión de lectura (imágenes)        |
+| `close_comic`      | Cierra la sesión y libera la caché           |
 | `get_page`         | Devuelve una página como data URL            |
 | `update_progress`  | Guarda la última página leída                |
+| `read_document`    | Entrega los bytes de un PDF/EPUB al webview  |
+| `set_comic_language` | Fija el idioma de un libro                  |
+| `translate`        | Traduce texto (Google Translate gratuito)    |
+| `list_highlights`  | Lista el vocabulario (todo o por libro)      |
+| `create_highlight` | Guarda una frase/palabra resaltada           |
+| `update_highlight_note` | Edita la nota de un resaltado           |
+| `delete_highlight` | Elimina una entrada del vocabulario          |
 
 ## 🗺️ Roadmap
 
+- [x] Soporte de **PDF** y **EPUB** con funciones tipo Kindle.
+- [ ] **Portadas** para PDF/EPUB (hoy se importan sin miniatura).
+- [ ] Resaltado de PDF por **coordenadas exactas** (hoy es por coincidencia de texto).
+- [ ] **Code-splitting** del bundle (pdf.js/epub.js lo engordan).
 - [ ] Render de **doble página** (ya modelado en el store).
-- [ ] Migrar el render de páginas al protocolo `asset:` para archivos pesados.
-- [ ] Tests de integración con fixtures `.cbz` / `.cbr` reales.
-- [ ] Soporte de formatos adicionales (CB7 / PDF) — _en evaluación_.
-- [ ] `cargo-audit` en el pipeline de CI.
+- [ ] Tests de integración con fixtures reales.
+- [ ] `cargo-audit` / `npm audit` en el pipeline de CI.
 
 ¿Tienes una idea que no está aquí? Abre un [issue](https://github.com/gabo8191/TomoReader/issues).
 
