@@ -109,6 +109,15 @@ fn import_one(
     )
 }
 
+/// Guarda la portada de un cómic a partir de los bytes de una imagen (PNG/JPEG).
+/// La usa el lector de PDF, que rasteriza la primera página en el webview, ya que
+/// el backend no renderiza PDF. Se redimensiona a miniatura antes de almacenarla.
+#[tauri::command]
+pub fn set_comic_cover(state: State<'_, AppState>, comic_id: i64, cover: Vec<u8>) -> Result<()> {
+    let thumb = util::make_thumbnail(&cover, COVER_WIDTH)?;
+    state.with_db(|conn| repo::update_cover(conn, comic_id, &thumb))
+}
+
 #[tauri::command]
 pub fn move_comic(state: State<'_, AppState>, id: i64, pocket_id: Option<i64>) -> Result<()> {
     state.with_db(|conn| repo::move_comic(conn, id, pocket_id))

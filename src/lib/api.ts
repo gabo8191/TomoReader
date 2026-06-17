@@ -44,6 +44,10 @@ export const api = {
   moveComic(id: number, pocketId: number | null): Promise<void> {
     return invoke('move_comic', { id, pocketId });
   },
+  /** Guarda la portada (bytes PNG/JPEG); la usa el lector PDF tras rasterizar la página 1. */
+  setComicCover(comicId: number, cover: Uint8Array): Promise<void> {
+    return invoke('set_comic_cover', { comicId, cover: Array.from(cover) });
+  },
 
   // ── Lectura ────────────────────────────────────────────────
   openComic(id: number): Promise<ComicSession> {

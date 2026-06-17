@@ -10,29 +10,49 @@ pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker();
 interface PdfViewProps {
   data: ArrayBuffer;
   highlights: Highlight[];
-  /** Se llama al soltar una selección, con el texto y su página serializada. */
+  /** Se llama al soltar una selección, con el texto y su ancla serializada. */
   onSelect: (text: string, location: string) => void;
+  /** Si se pasa, se invoca una vez con la portada (página 1) para persistirla. */
+  onCover?: (cover: Uint8Array) => void;
 }
 
-/** Página guardada en el campo `location` de un resaltado PDF. */
-function pageOf(location: string | null): number | null {
-  if (!location) return null;
+/** Rectángulo de un resaltado, normalizado a fracciones (0..1) del tamaño de página. */
+interface NormRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Ancla guardada en el campo `location` de un resaltado PDF. */
+interface PdfAnchor {
+  page: number | null;
+  rects: NormRect[];
+}
+
+function anchorOf(location: string | null): PdfAnchor {
+  if (!location) return { page: null, rects: [] };
   try {
-    return (JSON.parse(location) as { page?: number }).page ?? null;
+    const o = JSON.parse(location) as { page?: number; rects?: NormRect[] };
+    return { page: o.page ?? null, rects: o.rects ?? [] };
   } catch {
-    return null;
+    return { page: null, rects: [] };
   }
 }
 
 /**
- * Render de PDF con pdf.js: cada página se dibuja en un canvas con su capa de
- * texto encima, lo que permite selección nativa del navegador. Los resaltados se
- * re-aplican por coincidencia de texto en la página (aproximado pero suficiente).
+ * Render de PDF con pdf.js: cada página se dibuja en un canvas con su capa de texto
+ * encima (selección nativa del navegador). Los resaltados se guardan como rects
+ * normalizados al tamaño de página y se repintan como overlays posicionados, de modo
+ * que sobreviven a cambios de escala. Resaltados antiguos sin rects caen al modo por
+ * coincidencia de texto (compatibilidad hacia atrás).
  */
-export function PdfView({ data, highlights, onSelect }: PdfViewProps): JSX.Element {
+export function PdfView({ data, highlights, onSelect, onCover }: PdfViewProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onCoverRef = useRef(onCover);
+  onCoverRef.current = onCover;
   const highlightsRef = useRef(highlights);
   highlightsRef.current = highlights;
 
@@ -74,18 +94,42 @@ export function PdfView({ data, highlights, onSelect }: PdfViewProps): JSX.Eleme
         });
         await textLayer.render();
 
-        applyHighlights(textEl, n, highlightsRef.current);
+        applyHighlights(pageEl, n, highlightsRef.current);
+
+        // La página 1 sirve de portada si el llamador la pidió.
+        if (n === 1 && onCoverRef.current) {
+          canvas.toBlob(
+            (blob) => {
+              if (blob)
+                void blob.arrayBuffer().then((b) => onCoverRef.current?.(new Uint8Array(b)));
+            },
+            'image/jpeg',
+            0.7,
+          );
+        }
       }
     })();
 
     const handleMouseUp = () => {
       const selection = window.getSelection();
       const text = selection?.toString().trim() ?? '';
-      if (!text || selection?.rangeCount === 0) return;
-      const node = selection?.getRangeAt(0).startContainer;
-      const pageEl = (node instanceof Element ? node : node?.parentElement)?.closest('.pdfpage');
-      const page = pageEl ? Number((pageEl as HTMLElement).dataset.page) : null;
-      onSelectRef.current(text, JSON.stringify({ page }));
+      if (!text || !selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+      const node = range.startContainer;
+      const pageEl = (node instanceof Element ? node : node.parentElement)?.closest<HTMLElement>(
+        '.pdfpage',
+      );
+      if (!pageEl) return;
+      const page = Number(pageEl.dataset.page);
+      const pageRect = pageEl.getBoundingClientRect();
+      // Normaliza los rects del rango a fracciones del tamaño de la página.
+      const rects: NormRect[] = Array.from(range.getClientRects()).map((r) => ({
+        x: (r.left - pageRect.left) / pageRect.width,
+        y: (r.top - pageRect.top) / pageRect.height,
+        w: r.width / pageRect.width,
+        h: r.height / pageRect.height,
+      }));
+      onSelectRef.current(text, JSON.stringify({ page, rects }));
     };
     container.addEventListener('mouseup', handleMouseUp);
 
@@ -101,9 +145,7 @@ export function PdfView({ data, highlights, onSelect }: PdfViewProps): JSX.Eleme
     const container = containerRef.current;
     if (!container) return;
     for (const pageEl of Array.from(container.querySelectorAll<HTMLElement>('.pdfpage'))) {
-      const textEl = pageEl.querySelector<HTMLElement>('.textLayer');
-      const page = Number(pageEl.dataset.page);
-      if (textEl) applyHighlights(textEl, page, highlights);
+      applyHighlights(pageEl, Number(pageEl.dataset.page), highlights);
     }
   }, [highlights]);
 
@@ -111,20 +153,49 @@ export function PdfView({ data, highlights, onSelect }: PdfViewProps): JSX.Eleme
 }
 
 /**
- * Marca como resaltados los spans de texto de una página que forman parte de una
- * frase guardada. Es una coincidencia por contenido (no por coordenadas exactas).
+ * Repinta los resaltados de una página: dibuja un overlay posicionado por cada rect
+ * normalizado. Para resaltados antiguos (sin rects) marca los spans por coincidencia
+ * de texto, conservando el comportamiento previo.
  */
-function applyHighlights(textEl: HTMLElement, page: number, highlights: Highlight[]): void {
-  const phrases = highlights
-    .filter((h) => pageOf(h.location) === page)
-    .map((h) => h.text.trim())
-    .filter(Boolean);
-  if (phrases.length === 0) return;
+function applyHighlights(pageEl: HTMLElement, page: number, highlights: Highlight[]): void {
+  // Limpia overlays y marcas previas antes de redibujar.
+  for (const ov of Array.from(pageEl.querySelectorAll('.tomo-pdf-overlay'))) ov.remove();
+  for (const s of Array.from(pageEl.querySelectorAll('.tomo-pdf-hl'))) {
+    s.classList.remove('tomo-pdf-hl');
+  }
 
+  const width = pageEl.clientWidth;
+  const height = pageEl.clientHeight;
+  const textEl = pageEl.querySelector<HTMLElement>('.textLayer');
+
+  for (const hl of highlights) {
+    const { page: p, rects } = anchorOf(hl.location);
+    if (p !== page) continue;
+
+    if (rects.length > 0) {
+      for (const r of rects) {
+        const overlay = document.createElement('div');
+        overlay.className = 'tomo-pdf-overlay';
+        overlay.style.left = `${r.x * width}px`;
+        overlay.style.top = `${r.y * height}px`;
+        overlay.style.width = `${r.w * width}px`;
+        overlay.style.height = `${r.h * height}px`;
+        overlay.style.background = hl.color || '#F5A623';
+        pageEl.appendChild(overlay);
+      }
+    } else if (textEl) {
+      markByText(textEl, hl.text);
+    }
+  }
+}
+
+/** Fallback de compatibilidad: marca spans cuyo texto coincide con la frase guardada. */
+function markByText(textEl: HTMLElement, text: string): void {
+  const phrase = text.trim();
+  if (!phrase) return;
   for (const span of Array.from(textEl.querySelectorAll<HTMLElement>('span'))) {
     const content = span.textContent?.trim();
     if (!content) continue;
-    const matches = phrases.some((p) => p.includes(content) || content.includes(p));
-    span.classList.toggle('tomo-pdf-hl', matches);
+    if (phrase.includes(content) || content.includes(phrase)) span.classList.add('tomo-pdf-hl');
   }
 }

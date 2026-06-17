@@ -87,6 +87,12 @@ export function useDocReader(comic: Comic) {
     setHighlights((hs) => hs.filter((h) => h.id !== id));
   }, []);
 
+  // Persiste la portada generada por el lector (página 1 del PDF rasterizada).
+  const saveCover = useCallback(
+    (cover: Uint8Array) => api.setComicCover(comic.id, cover),
+    [comic.id],
+  );
+
   const setLanguage = useCallback(
     async (lang: string | null) => {
       const normalized = lang && lang.trim() !== '' ? lang : null;
@@ -104,6 +110,7 @@ export function useDocReader(comic: Comic) {
     translate,
     addHighlight,
     removeHighlight,
+    saveCover,
     setLanguage,
   };
 }

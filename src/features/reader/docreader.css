@@ -118,6 +118,15 @@
   border-radius: 2px;
 }
 
+/* Overlay de resaltado por coordenadas: semitransparente y sin bloquear la selección. */
+.tomo-pdf-overlay {
+  position: absolute;
+  z-index: 1;
+  opacity: 0.4;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
 /* ── Barra de búsqueda/traducción (estilo Kindle) ─────────── */
 .lookup {
   position: absolute;

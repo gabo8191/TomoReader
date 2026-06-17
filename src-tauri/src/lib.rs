@@ -40,6 +40,7 @@ pub fn run() {
             commands::import_comics,
             commands::move_comic,
             commands::delete_comic,
+            commands::set_comic_cover,
             commands::open_comic,
             commands::close_comic,
             commands::get_page,

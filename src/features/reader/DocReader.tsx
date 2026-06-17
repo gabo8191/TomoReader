@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDocReader } from './useDocReader';
-import { EpubView } from './EpubView';
-import { PdfView } from './PdfView';
 import { Icon } from '@/components/Icon';
 import { LANGUAGES } from '@/lib/languages';
 import type { Comic } from '@/types';
 import './docreader.css';
+
+// Carga diferida: pdf.js y epub.js son pesados; así caen en chunks aparte y solo se
+// descargan al abrir un documento (code-splitting, evita el warning de tamaño de Vite).
+const EpubView = lazy(() => import('./EpubView').then((m) => ({ default: m.EpubView })));
+const PdfView = lazy(() => import('./PdfView').then((m) => ({ default: m.PdfView })));
 
 interface DocReaderProps {
   comic: Comic;
@@ -111,11 +114,20 @@ export function DocReader({ comic, onClose }: DocReaderProps): JSX.Element {
       <div className="docreader__stage">
         {doc.loading && <div className="docreader__msg">Abriendo documento…</div>}
         {doc.error && <div className="docreader__msg docreader__msg--error">{doc.error}</div>}
-        {!doc.loading && !doc.error && doc.data && doc.format === 'epub' && (
-          <EpubView data={doc.data} highlights={doc.highlights} onSelect={onSelect} />
-        )}
-        {!doc.loading && !doc.error && doc.data && doc.format === 'pdf' && (
-          <PdfView data={doc.data} highlights={doc.highlights} onSelect={onSelect} />
+        {!doc.loading && !doc.error && doc.data && (
+          <Suspense fallback={<div className="docreader__msg">Cargando…</div>}>
+            {doc.format === 'epub' && (
+              <EpubView data={doc.data} highlights={doc.highlights} onSelect={onSelect} />
+            )}
+            {doc.format === 'pdf' && (
+              <PdfView
+                data={doc.data}
+                highlights={doc.highlights}
+                onSelect={onSelect}
+                onCover={comic.cover ? undefined : (cover) => void doc.saveCover(cover)}
+              />
+            )}
+          </Suspense>
         )}
       </div>
 

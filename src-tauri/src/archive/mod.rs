@@ -5,6 +5,7 @@
 
 mod cbr;
 mod cbz;
+mod epub;
 mod sorting;
 
 use std::path::{Path, PathBuf};
@@ -88,15 +89,21 @@ pub fn read_metadata(path: &Path) -> Result<ComicMetadata> {
     let format = Format::from_path(path)?;
     match format {
         // Los documentos (PDF/EPUB) los pagina y renderiza el frontend; aquí solo
-        // validamos que el archivo exista y sea legible.
+        // validamos que el archivo exista y, para EPUB, extraemos la portada del ZIP.
         Format::Pdf | Format::Epub => {
             if !path.is_file() {
                 return Err(AppError::NotFound(format!("{path:?}")));
             }
+            // La portada de PDF se genera en el frontend (set_comic_cover); EPUB se
+            // lee aquí. Un fallo de portada no debe abortar la importación.
+            let cover = match format {
+                Format::Epub => epub::read_cover(path).ok().flatten(),
+                _ => None,
+            };
             Ok(ComicMetadata {
                 format,
                 page_count: 0,
-                cover: None,
+                cover,
             })
         }
         Format::Cbz => {

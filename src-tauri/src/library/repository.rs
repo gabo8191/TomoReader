@@ -166,6 +166,14 @@ pub fn insert_comic(
     .map_err(|_| AppError::NotFound(format!("cómic {path}")))
 }
 
+pub fn update_cover(conn: &Connection, id: i64, cover: &[u8]) -> Result<()> {
+    conn.execute(
+        "UPDATE comics SET cover = ?1 WHERE id = ?2",
+        params![cover, id],
+    )?;
+    Ok(())
+}
+
 pub fn update_progress(conn: &Connection, id: i64, last_page: i64) -> Result<()> {
     conn.execute(
         "UPDATE comics SET last_page = ?1 WHERE id = ?2",
