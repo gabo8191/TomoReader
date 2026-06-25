@@ -35,6 +35,13 @@ export interface Comic {
   cover: string | null;
   /** Idioma del libro (código ISO, p. ej. "en"), o null para autodetectar. */
   language: string | null;
+  /**
+   * Última posición de lectura en documentos:
+   * - PDF: número de página serializado como string (base 0).
+   * - EPUB: CFI de posición (p. ej. "epubcfi(/6/4[…]!/4/2/1:0)").
+   * - null si el documento nunca se ha leído.
+   */
+  lastLocation: string | null;
   addedAt: string;
 }
 

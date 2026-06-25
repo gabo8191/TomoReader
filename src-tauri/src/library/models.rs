@@ -26,6 +26,9 @@ pub struct Comic {
     pub cover: Option<String>,
     /// Idioma del libro (código ISO, p. ej. "en") para traducir. `None` = auto.
     pub language: Option<String>,
+    /// Última posición de lectura en documentos: número de página para PDF,
+    /// CFI para EPUB. `None` = documento nunca leído.
+    pub last_location: Option<String>,
     pub added_at: String,
 }
 

@@ -77,6 +77,8 @@ export function LibraryView({ onOpenComic }: LibraryViewProps): JSX.Element {
           onOpen={onOpenComic}
           onMove={(id, pocketId) => void lib.moveComic(id, pocketId)}
           onDelete={(id) => void lib.deleteComic(id)}
+          onImport={() => void lib.importComics()}
+          emptyContext={lib.comics.length === 0 ? 'library' : 'filter'}
         />
       </main>
 

@@ -14,9 +14,13 @@ pub struct Translation {
 
 /// Traduce texto con el endpoint público de Google Translate (gratuito, sin API
 /// key). Se llama desde el backend para evitar CORS. `source` admite "auto".
+///
+/// Es `async` a propósito: un comando síncrono se ejecuta en el hilo principal (el del
+/// webview WebKitGTK), donde una petición de red bloqueante congela el event loop y el
+/// `invoke` no vuelve nunca. En `async` corre sobre el runtime de Tauri sin bloquearlo.
 #[tauri::command]
-pub fn translate(text: String, source: String, target: String) -> Result<Translation> {
-    let text = text.trim();
+pub async fn translate(text: String, source: String, target: String) -> Result<Translation> {
+    let text = text.trim().to_string();
     if text.is_empty() {
         return Ok(Translation {
             translation: String::new(),
@@ -25,13 +29,14 @@ pub fn translate(text: String, source: String, target: String) -> Result<Transla
     }
 
     let src = if source.trim().is_empty() {
-        "auto"
+        "auto".to_string()
     } else {
-        source.trim()
+        source.trim().to_string()
     };
+    let target = target.trim().to_string();
     let url = "https://translate.googleapis.com/translate_a/single";
 
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| AppError::Translate(e.to_string()))?;
@@ -40,18 +45,20 @@ pub fn translate(text: String, source: String, target: String) -> Result<Transla
         .get(url)
         .query(&[
             ("client", "gtx"),
-            ("sl", src),
-            ("tl", target.trim()),
+            ("sl", &src),
+            ("tl", &target),
             ("dt", "t"),
-            ("q", text),
+            ("q", &text),
         ])
         .send()
+        .await
         .map_err(|e| AppError::Translate(e.to_string()))?
         .error_for_status()
         .map_err(|e| AppError::Translate(e.to_string()))?;
 
     let body: Value = resp
         .json()
+        .await
         .map_err(|e| AppError::Translate(e.to_string()))?;
 
     // Estructura: [[["traducido","original",...], ...], null, "en", ...]

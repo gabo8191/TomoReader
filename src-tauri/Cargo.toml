@@ -1,6 +1,6 @@
 [package]
 name = "tomo"
-version = "0.2.0"
+version = "1.0.0"
 description = "Lector de cómics y mangas (CBR/CBZ) cómodo para la vista."
 authors = ["Gabriel Castillo <vulcano.start.ia@gmail.com>"]
 edition = "2021"
@@ -16,7 +16,9 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `devtools` habilita el inspector web también en builds de release (clic derecho →
+# Inspeccionar). Útil para diagnosticar el render de pdf.js/epub.js en WebKitGTK.
+tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

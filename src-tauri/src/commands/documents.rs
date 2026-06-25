@@ -59,3 +59,30 @@ pub fn set_comic_language(
     let lang = language.filter(|l| !l.trim().is_empty());
     state.with_db(|conn| repo::set_comic_language(conn, comic_id, lang.as_deref()))
 }
+
+/// Guarda el progreso de lectura de un documento PDF o EPUB.
+///
+/// - PDF: enviar `last_page` con el número de página (base 0); `last_location` puede omitirse.
+/// - EPUB: enviar `last_location` con el CFI de posición; `last_page` puede omitirse.
+/// - Se rechazan llamadas donde ambos campos son `None` (no hay nada que persistir).
+#[tauri::command]
+pub fn update_doc_progress(
+    state: State<'_, AppState>,
+    comic_id: i64,
+    last_page: Option<i64>,
+    last_location: Option<String>,
+) -> Result<()> {
+    // Validar que al menos un campo tenga valor útil
+    if last_page.is_none()
+        && last_location
+            .as_deref()
+            .map_or(true, |s| s.trim().is_empty())
+    {
+        return Err(AppError::UnsupportedFormat(
+            "update_doc_progress requiere al menos last_page o last_location".to_string(),
+        ));
+    }
+    // Normalizar: string vacío equivale a None
+    let location = last_location.filter(|s| !s.trim().is_empty());
+    state.with_db(|conn| repo::update_doc_progress(conn, comic_id, last_page, location.as_deref()))
+}

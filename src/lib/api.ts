@@ -70,6 +70,19 @@ export const api = {
   setComicLanguage(comicId: number, language: string | null): Promise<void> {
     return invoke('set_comic_language', { comicId, language });
   },
+  /**
+   * Guarda el progreso de lectura de un documento.
+   * - PDF: pasar `lastPage` (número de página base 0); `lastLocation` puede ser null.
+   * - EPUB: pasar `lastLocation` (CFI); `lastPage` puede ser null.
+   * Al menos uno de los dos debe ser no nulo.
+   */
+  updateDocProgress(
+    comicId: number,
+    lastPage: number | null,
+    lastLocation: string | null,
+  ): Promise<void> {
+    return invoke('update_doc_progress', { comicId, lastPage, lastLocation });
+  },
 
   // ── Traducción ─────────────────────────────────────────────
   translate(text: string, source: string, target: string): Promise<Translation> {

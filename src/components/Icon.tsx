@@ -17,7 +17,8 @@ export type IconName =
   | 'trash'
   | 'chevron-left'
   | 'chevron-right'
-  | 'book';
+  | 'book'
+  | 'bookmark';
 
 interface IconProps {
   name: IconName;
@@ -88,6 +89,7 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M12 6v13" />
     </>
   ),
+  bookmark: <path d="M6 3h12v18l-6-4-6 4z" />,
 };
 
 export function Icon({ name, size = 20, className }: IconProps): JSX.Element {

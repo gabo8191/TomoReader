@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '@/lib/api';
+import { toast } from '@/lib/toast-store';
 import type { Comic, ComicFormat, Pocket } from '@/types';
 
 /** Extrae el nombre de archivo de una ruta absoluta (Windows o Unix). */
@@ -120,10 +121,14 @@ export function useLibrary() {
     try {
       const result = await api.importComics(paths, state.selectedPocket);
       await Promise.all([refreshPockets(), loadComics(state.selectedPocket)]);
-      // Reporta los archivos que no se pudieron importar, con su motivo.
+      // Importación exitosa: toast informativo con el resultado.
+      if (result.imported.length > 0 && result.failed.length === 0) {
+        toast.success(`${result.imported.length} libro(s) importado(s) correctamente.`);
+      }
+      // Fallos parciales o totales: toast de error no bloqueante (reemplaza el error inline).
       if (result.failed.length > 0) {
-        const detail = result.failed.map((f) => `${fileName(f.path)}: ${f.reason}`).join('\n');
-        setError(`No se pudieron importar ${result.failed.length} archivo(s):\n${detail}`);
+        const detail = result.failed.map((f) => `${fileName(f.path)}: ${f.reason}`).join(' · ');
+        toast.error(`${result.failed.length} archivo(s) no importado(s): ${detail}`, 6000);
       }
     } catch (err) {
       setError(err);

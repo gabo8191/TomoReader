@@ -196,10 +196,34 @@
   justify-content: center;
   gap: 6px;
   color: var(--text-muted);
+  padding: 40px 24px;
+  text-align: center;
 }
 
 .grid__hint {
   font-size: 13px;
+  max-width: 320px;
+}
+
+/* ── Onboarding de biblioteca vacía ──────────────────────── */
+.grid__onboarding {
+  gap: 12px;
+}
+
+.grid__onboarding-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.grid__onboarding-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.grid__onboarding-cta {
+  margin-top: 8px;
 }
 
 .card {

@@ -15,6 +15,8 @@ interface SettingsState {
   brightness: number;
   /** Filtro de luz cálida para reducir luz azul (0 – 1). */
   warmth: number;
+  /** Tamaño del texto en EPUB, en porcentaje (70 – 160). */
+  fontSize: number;
   /** Doble página (estilo manga/cómic impreso). */
   doublePage: boolean;
   /** Mostrar la barra de progreso inferior. */
@@ -27,6 +29,7 @@ interface SettingsState {
   setDirection: (dir: ReadingDirection) => void;
   setBrightness: (value: number) => void;
   setWarmth: (value: number) => void;
+  setFontSize: (value: number) => void;
   toggleDoublePage: () => void;
   toggleProgress: () => void;
   setNativeLanguage: (lang: string) => void;
@@ -43,6 +46,7 @@ export const useSettings = create<SettingsState>()(
       direction: 'ltr',
       brightness: 0.92,
       warmth: 0.25,
+      fontSize: 100,
       doublePage: false,
       showProgress: true,
       nativeLanguage: 'es',
@@ -52,6 +56,7 @@ export const useSettings = create<SettingsState>()(
       setDirection: (direction) => set({ direction }),
       setBrightness: (brightness) => set({ brightness: clamp(brightness, 0.3, 1) }),
       setWarmth: (warmth) => set({ warmth: clamp(warmth, 0, 1) }),
+      setFontSize: (fontSize) => set({ fontSize: clamp(fontSize, 70, 160) }),
       toggleDoublePage: () => set((s) => ({ doublePage: !s.doublePage })),
       toggleProgress: () => set((s) => ({ showProgress: !s.showProgress })),
       setNativeLanguage: (nativeLanguage) => set({ nativeLanguage }),

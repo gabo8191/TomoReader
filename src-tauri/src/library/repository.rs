@@ -25,6 +25,7 @@ fn row_to_comic(row: &Row<'_>) -> rusqlite::Result<Comic> {
         last_page: row.get("last_page")?,
         cover: cover_to_data_url(cover),
         language: row.get("language")?,
+        last_location: row.get("last_location")?,
         added_at: row.get("added_at")?,
     })
 }
@@ -182,6 +183,36 @@ pub fn update_progress(conn: &Connection, id: i64, last_page: i64) -> Result<()>
     Ok(())
 }
 
+/// Guarda el progreso de lectura de un documento (PDF o EPUB).
+///
+/// - PDF: `last_page` contiene el número de página (base 0); `last_location` puede
+///   ser `None` o bien el mismo número serializado como string (ambos se persisten).
+/// - EPUB: `last_location` contiene el CFI; `last_page` puede ser `None`.
+///
+/// Solo actualiza los campos cuyo `Option` no es `None`, de modo que se puede
+/// llamar con solo uno de los dos sin borrar el otro.
+pub fn update_doc_progress(
+    conn: &Connection,
+    id: i64,
+    last_page: Option<i64>,
+    last_location: Option<&str>,
+) -> Result<()> {
+    // Actualiza únicamente los campos provistos para no borrar datos existentes.
+    if let Some(page) = last_page {
+        conn.execute(
+            "UPDATE comics SET last_page = ?1 WHERE id = ?2",
+            params![page, id],
+        )?;
+    }
+    if let Some(location) = last_location {
+        conn.execute(
+            "UPDATE comics SET last_location = ?1 WHERE id = ?2",
+            params![location, id],
+        )?;
+    }
+    Ok(())
+}
+
 pub fn move_comic(conn: &Connection, id: i64, pocket_id: Option<i64>) -> Result<()> {
     conn.execute(
         "UPDATE comics SET pocket_id = ?1 WHERE id = ?2",
@@ -276,4 +307,113 @@ pub fn update_highlight_note(conn: &Connection, id: i64, note: Option<&str>) -> 
 pub fn delete_highlight(conn: &Connection, id: i64) -> Result<()> {
     conn.execute("DELETE FROM highlights WHERE id = ?1", params![id])?;
     Ok(())
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::library::db;
+
+    /// Abre una BD en memoria y aplica las migraciones, listo para usar en tests.
+    fn test_conn() -> Connection {
+        // SQLite acepta ":memory:" para bases de datos efímeras.
+        let conn = Connection::open_in_memory().expect("abrir BD en memoria");
+        conn.pragma_update(None, "foreign_keys", "ON")
+            .expect("activar FK");
+        db::migrate_for_test(&conn).expect("migrar esquema en test");
+        conn
+    }
+
+    /// Inserta un cómic mínimo y devuelve su id para los tests de progreso.
+    fn insert_test_comic(conn: &Connection) -> i64 {
+        conn.execute(
+            "INSERT INTO comics (title, path, format, page_count) VALUES ('Test', '/tmp/test.pdf', 'pdf', 10)",
+            [],
+        )
+        .expect("insertar cómic de test");
+        conn.last_insert_rowid()
+    }
+
+    // ── update_doc_progress: campo last_location (EPUB) ──────────────────────
+
+    #[test]
+    fn update_doc_progress_persists_last_location() {
+        let conn = test_conn();
+        let id = insert_test_comic(&conn);
+        let cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)";
+
+        update_doc_progress(&conn, id, None, Some(cfi)).expect("persistir last_location");
+
+        let comic = get_comic(&conn, id).expect("obtener cómic");
+        assert_eq!(comic.last_location.as_deref(), Some(cfi));
+        // last_page no debe haber cambiado del valor por defecto (0)
+        assert_eq!(comic.last_page, 0);
+    }
+
+    // ── update_doc_progress: campo last_page (PDF) ────────────────────────────
+
+    #[test]
+    fn update_doc_progress_persists_last_page() {
+        let conn = test_conn();
+        let id = insert_test_comic(&conn);
+
+        update_doc_progress(&conn, id, Some(7), None).expect("persistir last_page");
+
+        let comic = get_comic(&conn, id).expect("obtener cómic");
+        assert_eq!(comic.last_page, 7);
+        // last_location sigue siendo None
+        assert!(comic.last_location.is_none());
+    }
+
+    // ── update_doc_progress: ambos campos juntos ──────────────────────────────
+
+    #[test]
+    fn update_doc_progress_persists_both_fields() {
+        let conn = test_conn();
+        let id = insert_test_comic(&conn);
+        let cfi = "epubcfi(/6/2!/4/2/2/1:0)";
+
+        update_doc_progress(&conn, id, Some(3), Some(cfi)).expect("persistir ambos campos");
+
+        let comic = get_comic(&conn, id).expect("obtener cómic");
+        assert_eq!(comic.last_page, 3);
+        assert_eq!(comic.last_location.as_deref(), Some(cfi));
+    }
+
+    // ── update_doc_progress: campos None no sobreescriben valores existentes ───
+
+    #[test]
+    fn update_doc_progress_none_fields_do_not_overwrite() {
+        let conn = test_conn();
+        let id = insert_test_comic(&conn);
+        let cfi = "epubcfi(/6/4!/4/2/1:0)";
+
+        // Primero guardamos los dos campos
+        update_doc_progress(&conn, id, Some(5), Some(cfi)).expect("primera actualización");
+
+        // Ahora llamamos con ambos None: no debe borrar lo guardado
+        update_doc_progress(&conn, id, None, None).expect("actualización vacía");
+
+        let comic = get_comic(&conn, id).expect("obtener cómic");
+        assert_eq!(comic.last_page, 5);
+        assert_eq!(comic.last_location.as_deref(), Some(cfi));
+    }
+
+    // ── update_doc_progress: idempotencia (llamadas repetidas) ───────────────
+
+    #[test]
+    fn update_doc_progress_is_idempotent() {
+        let conn = test_conn();
+        let id = insert_test_comic(&conn);
+        let cfi = "epubcfi(/6/4!/4/2/1:0)";
+
+        update_doc_progress(&conn, id, Some(2), Some(cfi)).expect("primera pasada");
+        update_doc_progress(&conn, id, Some(2), Some(cfi)).expect("segunda pasada");
+
+        let comic = get_comic(&conn, id).expect("obtener cómic");
+        assert_eq!(comic.last_page, 2);
+        assert_eq!(comic.last_location.as_deref(), Some(cfi));
+    }
 }

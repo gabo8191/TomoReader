@@ -3,6 +3,7 @@ import { useSettings } from '@/lib/settings-store';
 import { LibraryView } from '@/features/library/LibraryView';
 import { ReaderView } from '@/features/reader/ReaderView';
 import { DocReader } from '@/features/reader/DocReader';
+import { Toaster } from '@/components/Toaster';
 import { isDocumentFormat, type Comic } from '@/types';
 import './App.css';
 
@@ -30,6 +31,8 @@ export function App(): JSX.Element {
       {view.name === 'library' && <LibraryView onOpenComic={openComic} />}
       {view.name === 'reader' && <ReaderView comicId={view.comic.id} onClose={backToLibrary} />}
       {view.name === 'doc' && <DocReader comic={view.comic} onClose={backToLibrary} />}
+      {/* Toaster montado una sola vez en la raíz; es un portal flotante fijo */}
+      <Toaster />
     </div>
   );
 }

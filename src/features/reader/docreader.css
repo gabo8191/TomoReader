@@ -42,6 +42,14 @@
   padding: 4px 8px;
 }
 
+/* Fila horizontal que contiene paneles laterales + stage central */
+.docreader__body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Stage: ocupa el espacio disponible, con scroll propio */
 .docreader__stage {
   flex: 1;
   overflow: auto;
@@ -57,6 +65,203 @@
 
 .docreader__msg--error {
   color: #ff9b9b;
+}
+
+/* ── Paneles laterales (TOC y resaltados) ────────────────── */
+.docreader__panel {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* El panel de resaltados va a la derecha */
+.docreader__panel--right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+  order: 3;
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Barra de búsqueda interna del panel */
+.panel__search {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel__input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.panel__input::placeholder {
+  color: var(--text-muted);
+}
+
+.panel__search-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.panel__label {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.panel__list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.panel__empty {
+  padding: 16px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.panel__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text);
+  gap: 2px;
+  transition: background var(--transition);
+  border-radius: 0;
+}
+
+.panel__item:hover {
+  background: var(--surface);
+}
+
+.panel__item-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.panel__item-excerpt {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ── Resaltados en el panel ─────────────────────────────── */
+.hl-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hl-item__color {
+  width: 4px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  align-self: stretch;
+}
+
+.hl-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hl-item__text {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.hl-item__translation {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.hl-item__note {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.hl-item__actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.hl-item__btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.hl-item__btn--delete:hover {
+  color: #ff9b9b;
+}
+
+/* Edición inline de nota */
+.hl-item__note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.hl-item__note-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.hl-item__note-actions {
+  display: flex;
+  gap: 6px;
 }
 
 /* ── EPUB ─────────────────────────────────────────────────── */
@@ -100,16 +305,36 @@
   align-items: center;
   gap: 16px;
   padding: 16px 0;
+  overflow: auto;
+  height: 100%;
+  width: 100%;
 }
 
 .pdfpage {
   position: relative;
   background: #fff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+/* Placeholder: el espacio está reservado pero sin canvas (render perezoso) */
+.pdfpage--placeholder {
+  background: var(--surface);
 }
 
 .pdfpage canvas {
   display: block;
+}
+
+/* pdf.js deja la selección nativa TRANSPARENTE (usa su propio resaltador, que aquí no
+   montamos), por eso no se veía el azul al seleccionar. La forzamos visible para que el
+   usuario vea qué está seleccionando. */
+.textLayer ::selection {
+  background: rgba(56, 132, 255, 0.4) !important;
+}
+
+.textLayer ::-moz-selection {
+  background: rgba(56, 132, 255, 0.4) !important;
 }
 
 /* La capa de texto de pdf.js se posiciona con pdf_viewer.css; aquí solo el resaltado. */
@@ -118,13 +343,63 @@
   border-radius: 2px;
 }
 
-/* Overlay de resaltado por coordenadas: semitransparente y sin bloquear la selección. */
+/* Overlay de resaltado por coordenadas: tinta el texto como un resaltador (multiply,
+   así el texto sigue legible) y queda por encima de la capa de texto sin bloquear la
+   selección. */
 .tomo-pdf-overlay {
   position: absolute;
-  z-index: 1;
-  opacity: 0.4;
+  z-index: 3;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
   border-radius: 2px;
   pointer-events: none;
+}
+
+/* ── Navegación de páginas (PDF) ──────────────────────────── */
+.docnav {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.docnav__counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.docnav__input {
+  width: 48px;
+  padding: 3px 6px;
+  text-align: center;
+  background: var(--bg-reader);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.docnav__total {
+  color: var(--text-muted);
+}
+
+.docnav .iconbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 /* ── Barra de búsqueda/traducción (estilo Kindle) ─────────── */
@@ -161,8 +436,75 @@
   color: var(--accent);
 }
 
+/* Error de traducción con botón Reintentar inline */
+.lookup__error {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #ff9b9b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lookup__retry {
+  background: none;
+  border: 1px solid #ff9b9b;
+  color: #ff9b9b;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.lookup__retry:hover {
+  background: rgba(255, 155, 155, 0.15);
+}
+
 .lookup__actions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* ── Panel de confort (brillo / calidez) ──────────────────── */
+.comfort {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  z-index: 6;
+  width: 240px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comfort__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.comfort__row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comfort__val {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.comfort input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
 }

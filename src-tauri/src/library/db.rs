@@ -17,6 +17,13 @@ pub fn open(path: &Path) -> Result<Connection> {
 
 /// Aplica el esquema. Es idempotente (IF NOT EXISTS), así que puede ejecutarse
 /// en cada arranque sin riesgo.
+///
+/// Expuesta como `pub` solo para tests de integración del repositorio.
+#[cfg(test)]
+pub fn migrate_for_test(conn: &Connection) -> Result<()> {
+    migrate(conn)
+}
+
 fn migrate(conn: &Connection) -> Result<()> {
     conn.execute_batch(
         "
@@ -62,6 +69,10 @@ fn migrate(conn: &Connection) -> Result<()> {
     // `language` (idioma del libro) se añade aparte: ADD COLUMN no admite
     // IF NOT EXISTS, así que comprobamos antes para que la migración sea idempotente.
     add_column_if_missing(conn, "comics", "language", "TEXT")?;
+
+    // `last_location` guarda la posición de lectura de documentos PDF/EPUB:
+    // número de página (PDF) o CFI (EPUB). NULL = nunca leído.
+    add_column_if_missing(conn, "comics", "last_location", "TEXT")?;
 
     Ok(())
 }

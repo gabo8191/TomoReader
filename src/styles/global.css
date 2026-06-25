@@ -152,3 +152,23 @@ img {
   border-color: var(--accent);
   color: #1a1730;
 }
+
+/* ── Accesibilidad: foco visible consistente ─────────────────
+   Solo se aplica con :focus-visible (navegación por teclado),
+   no con :focus (clic con ratón), para no molestar visualmente.
+   ─────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Los botones e inputs ya tienen border-radius; el outline lo respeta
+   con border-radius heredado en navegadores modernos. */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

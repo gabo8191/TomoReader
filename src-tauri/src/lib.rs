@@ -47,6 +47,7 @@ pub fn run() {
             commands::update_progress,
             commands::read_document,
             commands::set_comic_language,
+            commands::update_doc_progress,
             commands::translate,
             commands::list_highlights,
             commands::create_highlight,
